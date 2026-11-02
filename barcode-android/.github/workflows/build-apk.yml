@@ -1,0 +1,42 @@
+name: Build Kimo Barcode APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "barcode-android/**"
+      - ".github/workflows/build-kimo-barcode.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: barcode-android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kimo-Barcode-Test-APK
+          path: barcode-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
