@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
@@ -35,8 +36,9 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) {
             try {
                 val image = InputImage.fromFilePath(this, uri)
+                val startedAt = SystemClock.elapsedRealtime()
                 scanner.process(image)
-                    .addOnSuccessListener { showBarcodes(it) }
+                    .addOnSuccessListener { showBarcodes(it, SystemClock.elapsedRealtime() - startedAt) }
                     .addOnFailureListener { showMessage("تعذرت قراءة الصورة: ${it.localizedMessage}") }
             } catch (e: Exception) {
                 showMessage("تعذر فتح الصورة: ${e.localizedMessage}")
@@ -132,10 +134,14 @@ class MainActivity : AppCompatActivity() {
                     return@setAnalyzer
                 }
                 analyzing = true
+                val startedAt = SystemClock.elapsedRealtime()
                 val image = InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
                 scanner.process(image)
                     .addOnSuccessListener { codes ->
-                        if (codes.isNotEmpty()) runOnUiThread { showBarcodes(codes) }
+                        if (codes.isNotEmpty()) {
+                            val elapsed = SystemClock.elapsedRealtime() - startedAt
+                            runOnUiThread { showBarcodes(codes, elapsed) }
+                        }
                     }
                     .addOnCompleteListener {
                         analyzing = false
@@ -153,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun showBarcodes(codes: List<Barcode>) {
+    private fun showBarcodes(codes: List<Barcode>, elapsedMs: Long? = null) {
         if (codes.isEmpty()) {
             showMessage("لم يتم العثور على باركود واضح في الصورة.")
             return
@@ -168,7 +174,8 @@ class MainActivity : AppCompatActivity() {
             }
             "النتيجة ${index + 1}\nالنوع: ${formatName(code.format)}\nتصنيف المحتوى: $type\nالقيمة:\n${code.rawValue ?: code.displayValue ?: "(فارغ)"}"
         }.joinToString("\n\n----------------\n\n")
-        showMessage(output)
+        val timing = elapsedMs?.let { "\n\nزمن المعالجة: ${it} مللي ثانية" } ?: ""
+        showMessage(output + timing)
     }
 
     private fun formatName(format: Int): String = when (format) {
