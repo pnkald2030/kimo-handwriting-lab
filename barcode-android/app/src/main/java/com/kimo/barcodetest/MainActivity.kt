@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.rgb(246, 248, 246))
         }
         val title = TextView(this).apply {
-            text = "كيمو | مختبر قراءة الباركود"
+            text = "قارئ الباركود"
             textSize = 21f
             setTextColor(Color.rgb(20, 90, 67))
             gravity = Gravity.CENTER
