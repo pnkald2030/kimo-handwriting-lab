@@ -176,7 +176,7 @@ res_xml.mkdir(parents=True,exist_ok=True)
 manifest=app/'src/main/AndroidManifest.xml'
 m=manifest.read_text()
 if 'kimo.fileprovider' not in m:
-    provider='        <provider android:name="androidx.core.content.FileProvider" android:authorities="' + chr(36) + '{applicationId}.kimo.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/kimo_file_paths" /></provider>\n'
+    provider='        <provider android:name="androidx.core.content.FileProvider" android:authorities="' + chr(36) + '{applicationId}.kimo.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/kimo_file_paths" /></provider>\\n'
     m=m.replace('</application>',provider+'    </application>')
 manifest.write_text(m)
 
