@@ -1,0 +1,76 @@
+name: Build repaired Kimo APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Kimo_Android_Repair_Package.zip'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract repaired package
+        run: |
+          unzip -o Kimo_Android_Repair_Package.zip
+          test -f Kimo_Repair_Package/www/index.html
+          test -f Kimo_Repair_Package/patch-android.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify HTML and JavaScript
+        working-directory: Kimo_Repair_Package
+        run: python3 verify-web-assets.py
+      - name: Install dependencies
+        working-directory: Kimo_Repair_Package
+        run: npm install
+      - name: Generate Android project
+        working-directory: Kimo_Repair_Package
+        run: npx cap add android
+      - name: Sync app
+        working-directory: Kimo_Repair_Package
+        run: npx cap sync android
+      - name: Verify packaged HTML matches source
+        working-directory: Kimo_Repair_Package
+        run: cmp www/index.html android/app/src/main/assets/public/index.html
+      - name: Install image tooling
+        run: python3 -m pip install pillow
+      - name: Add launcher icon resources
+        working-directory: Kimo_Repair_Package
+        run: |
+          python3 - <<'PYICON'
+          from PIL import Image
+          from pathlib import Path
+          base=Path('android/app/src/main/res')
+          icon=Image.open('assets/kimo-icon.png').convert('RGBA')
+          fg=Image.open('assets/kimo-icon-foreground.png').convert('RGBA')
+          for density,size in {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}.items():
+              d=base/f'mipmap-{density}'
+              d.mkdir(parents=True,exist_ok=True)
+              icon.resize((size,size),Image.Resampling.LANCZOS).save(d/'ic_launcher.png')
+              icon.resize((size,size),Image.Resampling.LANCZOS).save(d/'ic_launcher_round.png')
+              fg.resize((size,size),Image.Resampling.LANCZOS).save(d/'ic_launcher_foreground.png')
+          d=base/'mipmap-anydpi-v26'
+          d.mkdir(parents=True,exist_ok=True)
+          (d/'ic_launcher.xml').write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>')
+          (d/'ic_launcher_round.xml').write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>')
+          d=base/'values'
+          d.mkdir(parents=True,exist_ok=True)
+          (d/'ic_launcher_background.xml').write_text('<resources><color name="ic_launcher_background">#482526</color></resources>')
+          PYICON
+      - name: Integrate native barcode scanner
+        working-directory: Kimo_Repair_Package
+        run: python3 patch-android.py
+      - name: Build APK
+        working-directory: Kimo_Repair_Package
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kimo-Android-APK
+          path: Kimo_Repair_Package/android/app/build/outputs/apk/debug/app-debug.apk
