@@ -5,6 +5,7 @@ on:
     paths:
       - 'Kimo_Android_Repair_Package-1.zip'
       - '.github/workflows/build-kimo-repair.yml'
+      - 'repair-all-kimo.py'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,6 +16,7 @@ jobs:
           unzip -o Kimo_Android_Repair_Package-1.zip
           test -f Kimo_Repair_Package/www/index.html
           test -f Kimo_Repair_Package/patch-android.py
+          python3 repair-all-kimo.py Kimo_Repair_Package
       - uses: actions/setup-node@v4
         with:
           node-version: 22
