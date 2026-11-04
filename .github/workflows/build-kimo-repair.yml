@@ -64,6 +64,21 @@ jobs:
       - name: Integrate native barcode scanner
         working-directory: Kimo_Repair_Package
         run: python3 patch-android.py
+      - name: Fix Android SDK and Kotlin build settings
+        working-directory: Kimo_Repair_Package
+        run: |
+          python3 - <<'PYFIX'
+          from pathlib import Path
+          import re
+          p = Path('android/app/build.gradle')
+          s = p.read_text()
+          if not re.search(r'\\bcompileSdk(?:Version)?\\s+\\d+', s):
+              s = re.sub(r'android\\s*\\{', 'android {\\n    compileSdk 36', s, count=1)
+          s = re.sub(r'\\n\\s*kotlinOptions\\s*\\{[^}]*\\}', '', s, flags=re.S)
+          p.write_text(s)
+          print('Configured compileSdk 36 and removed incompatible kotlinOptions block.')
+          PYFIX
+          grep -nE 'android \\{|compileSdk|kotlinOptions' android/app/build.gradle
       - name: Build APK
         working-directory: Kimo_Repair_Package
         run: |
