@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'Kimo_Android_Repair_Package-1.zip'
+      - '.github/workflows/build-kimo-repair.yml'
 jobs:
   build:
     runs-on: ubuntu-latest
