@@ -34,7 +34,7 @@ css='''<style id="kimo-image-source-chooser-style">#kimoImageSourceChooser{z-ind
 if "kimo-image-source-chooser-style" not in s:s=s.replace("</body></html>",css+"\n</body></html>",1)
 
 # Patch both share actions to prefer the native Android share sheet.
-s=re.sub(r"(?s)  const files=\\[\\];for\\(let i=0;i<sources\\.length;i\\+\\+\\)\\{.*?\\n  else\\{toast\\('مشاركة الصور غير مدعومة في هذا المتصفح'\\);\\}",
+s=re.sub(r"(?s)  const files=\[\];for\(let i=0;i<sources\.length;i\+\+\)\{.*?\n  else\{toast\('مشاركة الصور غير مدعومة في هذا المتصفح'\);\}",
 """  if(window.KimoBarcodeNative?.shareImages){await window.KimoBarcodeNative.shareImages({dataUrls:sources,title:'مشاركة صور وثيقة من كيمو'});return;}
   const files=[];for(let i=0;i<sources.length;i++){const response=await fetch(sources[i]);const blob=await response.blob();const mime=blob.type||'image/jpeg';const ext=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';files.push(new File([blob],'kimo-document-'+(i+1)+'.'+ext,{type:mime}));}
   if(navigator.share&&navigator.canShare&&navigator.canShare({files})){await navigator.share({files});}
@@ -47,15 +47,15 @@ rep("if(addButton)addButton.onclick=()=>{","if(addButton)addButton.onclick=(even
 old="function readImage(file){return new Promise((resolve,reject)=>{if(file.size>12*1024*1024){reject(new Error('حجم الصورة أكبر من 12 ميغابايت. اختر صورة أصغر.'));return}let r=new FileReader();r.onload=()=>{let img=new Image();img.onload=()=>{try{let max=2600,scale=Math.min(1.5,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));let c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.84))}catch(e){resolve(r.result)}};img.onerror=()=>resolve(r.result);img.src=r.result};r.onerror=()=>reject(new Error('تعذرت قراءة الصورة'));r.readAsDataURL(file)})}"
 new="function readImage(file){return new Promise((resolve,reject)=>{if(file.size>12*1024*1024){reject(new Error('حجم الصورة أكبر من 12 ميغابايت. اختر صورة أصغر.'));return}let r=new FileReader();r.onload=()=>{let img=new Image();img.onload=()=>{try{let max=2200,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));let c=document.createElement('canvas');c.width=w;c.height=h;let ctx=c.getContext('2d',{alpha:false});ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.82));c.width=1;c.height=1;img.src='';}catch(e){resolve(r.result)}};img.onerror=()=>resolve(r.result);img.src=r.result};r.onerror=()=>reject(new Error('تعذرت قراءة الصورة'));r.readAsDataURL(file)})}"
 rep(old,new,"image optimization")
-rep("function render(){let docs=await dbAll();","let kimoRenderGeneration=0;\\nasync function render(){const renderId=++kimoRenderGeneration;let docs=await dbAll();if(renderId!==kimoRenderGeneration)return;","render generation")
+rep("function render(){let docs=await dbAll();","let kimoRenderGeneration=0;\nasync function render(){const renderId=++kimoRenderGeneration;let docs=await dbAll();if(renderId!==kimoRenderGeneration)return;","render generation")
 rep("if(app?.exitApp){app.exitApp();return}toastMessage('للخروج أغلق التطبيق من قائمة التطبيقات المفتوحة');return","if(app?.exitApp){app.exitApp();return}if(window.KimoBarcodeNative?.exitApp){window.KimoBarcodeNative.exitApp();return}toastMessage('للخروج أغلق التطبيق من قائمة التطبيقات المفتوحة');return","back exit")
-rep("setZoomRatio: opts => nativePlugin.setZoomRatio(typeof opts==='number'?{ratio:opts}:opts||{})","setZoomRatio: opts => nativePlugin.setZoomRatio(typeof opts==='number'?{ratio:opts}:opts||{}),\\n    shareImages: opts => nativePlugin.shareImages(opts||{}),\\n    exitApp: () => nativePlugin.exitApp()","native bridge")
+rep("setZoomRatio: opts => nativePlugin.setZoomRatio(typeof opts==='number'?{ratio:opts}:opts||{})","setZoomRatio: opts => nativePlugin.setZoomRatio(typeof opts==='number'?{ratio:opts}:opts||{}),\n    shareImages: opts => nativePlugin.shareImages(opts||{}),\n    exitApp: () => nativePlugin.exitApp()","native bridge")
 h.write_text(s,encoding="utf-8")
 
 # Add native sharing and exit.
 plug=root/"android-native/src/main/java/com/kimo/archive/KimoBarcodeNativePlugin.kt";k=plug.read_text()
 if "fun shareImages(call: PluginCall)" not in k:
- k=k.replace("import android.content.Intent\\n","import android.content.Intent\\nimport android.content.ClipData\\nimport android.net.Uri\\nimport androidx.core.content.FileProvider\\nimport java.io.File\\n",1)
+ k=k.replace("import android.content.Intent\n","import android.content.Intent\nimport android.content.ClipData\nimport android.net.Uri\nimport androidx.core.content.FileProvider\nimport java.io.File\n",1)
  marker="    @PluginMethod fun stopCamera(call: PluginCall) { call.resolve() }"
  methods=r'''    @PluginMethod
     fun shareImages(call: PluginCall) {
@@ -101,8 +101,8 @@ if "fun shareImages(call: PluginCall)" not in k:
 # Full-screen native scanner with pinch and automatic zoom.
 cam=root/"android-native/src/main/java/com/kimo/archive/KimoBarcodeScannerActivity.kt";k=cam.read_text()
 if "ScaleGestureDetector" not in k:
- k=k.replace("import android.view.Gravity\\n","import android.view.Gravity\\nimport android.view.ScaleGestureDetector\\n",1)
- k=k.replace("    private var scanner: com.google.mlkit.vision.barcode.BarcodeScanner? = null\\n","    private var scanner: com.google.mlkit.vision.barcode.BarcodeScanner? = null\\n    private var camera: androidx.camera.core.Camera? = null\\n    private var currentZoom = 1f\\n    private var scanStartedAt = 0L\\n    private var lastAutoZoomStep = 0\\n    private lateinit var scaleDetector: ScaleGestureDetector\\n",1)
+ k=k.replace("import android.view.Gravity\n","import android.view.Gravity\nimport android.view.ScaleGestureDetector\n",1)
+ k=k.replace("    private var scanner: com.google.mlkit.vision.barcode.BarcodeScanner? = null\n","    private var scanner: com.google.mlkit.vision.barcode.BarcodeScanner? = null\n    private var camera: androidx.camera.core.Camera? = null\n    private var currentZoom = 1f\n    private var scanStartedAt = 0L\n    private var lastAutoZoomStep = 0\n    private lateinit var scaleDetector: ScaleGestureDetector\n",1)
  old='''        val hint = TextView(this).apply {
             text = "وجّه الكاميرا نحو الرمز\\nسيتم التقاطه تلقائياً عند وضوحه\\n\\nاضغط هنا للإلغاء"
             setTextColor(-1); textSize = 16f; gravity = Gravity.CENTER
@@ -141,7 +141,7 @@ if "ScaleGestureDetector" not in k:
 '''
  if old not in k:raise SystemExit("Scanner UI anchor missing")
  k=k.replace(old,new,1)
- k=k.replace("                analysis.setAnalyzer(executor) { proxy ->","                scanStartedAt = System.currentTimeMillis()\\n                lastAutoZoomStep = 0\\n                analysis.setAnalyzer(executor) { proxy ->",1)
+ k=k.replace("                analysis.setAnalyzer(executor) { proxy ->","                scanStartedAt = System.currentTimeMillis()\n                lastAutoZoomStep = 0\n                analysis.setAnalyzer(executor) { proxy ->",1)
  k=k.replace("                            ?.addOnCompleteListener { proxy.close() }",'''                            ?.addOnCompleteListener {
                                 proxy.close()
                                 if (!delivered.get()) {
@@ -160,15 +160,15 @@ if "ScaleGestureDetector" not in k:
                                     }
                                 }
                             }''',1)
- k=k.replace("                cameraProvider?.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)","                camera = cameraProvider?.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)\\n                currentZoom = 1f",1)
- k=k.replace("        cameraProvider?.unbindAll()\\n        scanner?.close()","        cameraProvider?.unbindAll()\\n        camera = null\\n        scanner?.close()",1)
+ k=k.replace("                cameraProvider?.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)","                camera = cameraProvider?.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)\n                currentZoom = 1f",1)
+ k=k.replace("        cameraProvider?.unbindAll()\n        scanner?.close()","        cameraProvider?.unbindAll()\n        camera = null\n        scanner?.close()",1)
  cam.write_text(k)
 
 # Build patcher: share provider and dispatch Android back to the HTML state machine.
 patcher=root/"patch-android.py";p=patcher.read_text()
-p=re.sub(r"(?m)^if 'kotlinOptions' not in s and 'android \{' in s:\\n    s=s.replace\\('android \{', .*?\\n","",p)
+p=re.sub(r"(?m)^if 'kotlinOptions' not in s and 'android \{' in s:\n    s=s.replace\('android \{', .*?\n","",p)
 if "kimo.fileprovider" not in p:
- marker="# Register native Capacitor plugin and fit content within system bars.\\n"
+ marker="# Register native Capacitor plugin and fit content within system bars.\n"
  add='''# Share local document images safely through Android's chooser.
 res_xml=app/'src/main/res/xml'
 res_xml.mkdir(parents=True,exist_ok=True)
@@ -176,7 +176,7 @@ res_xml.mkdir(parents=True,exist_ok=True)
 manifest=app/'src/main/AndroidManifest.xml'
 m=manifest.read_text()
 if 'kimo.fileprovider' not in m:
-    provider='        <provider android:name="androidx.core.content.FileProvider" android:authorities="' + chr(36) + '{applicationId}.kimo.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/kimo_file_paths" /></provider>\\\\n'
+    provider='        <provider android:name="androidx.core.content.FileProvider" android:authorities="' + chr(36) + '{applicationId}.kimo.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/kimo_file_paths" /></provider>\n'
     m=m.replace('</application>',provider+'    </application>')
 manifest.write_text(m)
 
@@ -184,8 +184,8 @@ manifest.write_text(m)
  if marker not in p:raise SystemExit("Patcher anchor missing")
  p=p.replace(marker,add+marker,1)
 if "onBackPressed()" not in p:
- p=p.replace("        main.write_text(code)\\n","""        if 'onBackPressed()' not in code:
-            code=code.replace('    }\\\\n}', '    }\\\\n    @Override\\\\n    public void onBackPressed() {\\\\n        if (getBridge() != null && getBridge().getWebView() != null) {\\\\n            getBridge().getWebView().evaluateJavascript("window.__kimoHandleAndroidBack && window.__kimoHandleAndroidBack()", null);\\\\n        } else { super.onBackPressed(); }\\\\n    }\\\\n}')
+ p=p.replace("        main.write_text(code)\n","""        if 'onBackPressed()' not in code:
+            code=code.replace('    }\n}', '    }\n    @Override\n    public void onBackPressed() {\n        if (getBridge() != null && getBridge().getWebView() != null) {\n            getBridge().getWebView().evaluateJavascript("window.__kimoHandleAndroidBack && window.__kimoHandleAndroidBack()", null);\n        } else { super.onBackPressed(); }\n    }\n}')
         main.write_text(code)
 """,1)
 patcher.write_text(p)
