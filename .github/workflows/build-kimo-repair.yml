@@ -75,14 +75,29 @@ jobs:
           import re
           p = Path('android/app/build.gradle')
           s = p.read_text()
-          s = re.sub(r'(?m)^\s*compileSdk(?:Version)?\s+.*$', '    compileSdk 36', s)
-          if not re.search(r'(?m)^\s*compileSdk\s+36\s*$', s):
-              s = re.sub(r'(?m)^android\s*\{', 'android {\n    compileSdk 36', s, count=1)
-          s = re.sub(r'(?s)\n\s*kotlinOptions\s*\{.*?\}', '', s)
+          # Capacitor templates vary: some use a plugins block, others use apply plugin.
+          if not re.search(r'(?m)^\\s*id\\s+[\\'\\"]org\\.jetbrains\\.kotlin\\.android[\\'\\"]', s) and "apply plugin: 'org.jetbrains.kotlin.android'" not in s:
+              if re.search(r'(?s)^\\s*plugins\\s*\\{', s):
+                  s = re.sub(r'(?s)^(\\s*plugins\\s*\\{)', r"\\1\\n    id 'org.jetbrains.kotlin.android' version '2.1.0'", s, count=1)
+              else:
+                  root = Path('android/build.gradle')
+                  rb = root.read_text()
+                  if 'org.jetbrains.kotlin:kotlin-gradle-plugin' not in rb:
+                      if 'dependencies {' not in rb:
+                          raise SystemExit('Cannot locate root Gradle dependencies block for Kotlin plugin.')
+                      rb = rb.replace('dependencies {', "dependencies {\\n        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'", 1)
+                      root.write_text(rb)
+                  s = "apply plugin: 'org.jetbrains.kotlin.android'\\n" + s
+          # Force a single explicit SDK level and remove any incompatible target override.
+          s = re.sub(r'(?m)^\\s*compileSdk(?:Version)?\\s+.*$', '    compileSdk 36', s)
+          if not re.search(r'(?m)^\\s*compileSdk\\s+36\\s*$', s):
+              s = re.sub(r'(?m)^android\\s*\\{', 'android {\\n    compileSdk 36', s, count=1)
+          s = re.sub(r'(?s)\\n\\s*kotlinOptions\\s*\\{.*?\\}', '', s)
           p.write_text(s)
-          print('Configured Android compileSdk 36 and removed conflicting Kotlin target override.')
+          print('Configured compileSdk 36 and ensured the Kotlin Android plugin is applied.')
+          print('Kotlin plugin:', 'org.jetbrains.kotlin.android' in p.read_text())
           PYFIX
-          grep -nE 'android \{|compileSdk|kotlinOptions' android/app/build.gradle
+          grep -nE 'android \\{|compileSdk|kotlin|apply plugin' android/app/build.gradle android/build.gradle
       - name: Build APK
         working-directory: Kimo_Repair_Package
         run: |
