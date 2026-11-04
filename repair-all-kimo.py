@@ -54,10 +54,8 @@ h.write_text(s,encoding="utf-8")
 
 # Add native sharing and exit.
 plug=root/"android-native/src/main/java/com/kimo/archive/KimoBarcodeNativePlugin.kt";k=plug.read_text()
-# Capacitor keeps plugin annotations in its annotation subpackage.
-for imp in ("import com.getcapacitor.annotation.CapacitorPlugin\\n","import com.getcapacitor.annotation.ActivityCallback\\n"):
-    if imp.strip() not in k:
-        k=k.replace("import com.getcapacitor.*\\n","import com.getcapacitor.*\\n"+imp,1)
+# Capacitor plugin annotations are in the annotation package.
+k=k.replace("import com.getcapacitor.*", "import com.getcapacitor.*\\nimport com.getcapacitor.annotation.CapacitorPlugin\\nimport com.getcapacitor.annotation.ActivityCallback", 1)
 camfix=root/"android-native/src/main/java/com/kimo/archive/KimoBarcodeScannerActivity.kt"
 camfix_text=camfix.read_text()
 camfix_text=camfix_text.replace("override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray)", "override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray)")
