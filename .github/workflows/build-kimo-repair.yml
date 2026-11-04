@@ -73,14 +73,14 @@ jobs:
           import re
           p = Path('android/app/build.gradle')
           s = p.read_text()
-          s = re.sub(r'(?m)^\\s*compileSdk(?:Version)?\\s+.*$', '    compileSdk 36', s)
-          if not re.search(r'(?m)^\\s*compileSdk\\s+36\\s*$', s):
-              s = re.sub(r'(?m)^android\\s*\\{', 'android {\\n    compileSdk 36', s, count=1)
-          s = re.sub(r'(?s)\\n\\s*kotlinOptions\\s*\\{.*?\\}', '', s)
+          s = re.sub(r'(?m)^\s*compileSdk(?:Version)?\s+.*$', '    compileSdk 36', s)
+          if not re.search(r'(?m)^\s*compileSdk\s+36\s*$', s):
+              s = re.sub(r'(?m)^android\s*\{', 'android {\n    compileSdk 36', s, count=1)
+          s = re.sub(r'(?s)\n\s*kotlinOptions\s*\{.*?\}', '', s)
           p.write_text(s)
           print('Configured Android compileSdk 36 and removed conflicting Kotlin target override.')
           PYFIX
-          grep -nE 'android \\{|compileSdk|kotlinOptions' android/app/build.gradle
+          grep -nE 'android \{|compileSdk|kotlinOptions' android/app/build.gradle
       - name: Build APK
         working-directory: Kimo_Repair_Package
         run: |
