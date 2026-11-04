@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'Kimo_Android_Repair_Package.zip'
+      - 'Kimo_Android_Repair_Package-1.zip'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract repaired package
         run: |
-          unzip -o Kimo_Android_Repair_Package.zip
+          unzip -o Kimo_Android_Repair_Package-1.zip
           test -f Kimo_Repair_Package/www/index.html
           test -f Kimo_Repair_Package/patch-android.py
       - uses: actions/setup-node@v4
