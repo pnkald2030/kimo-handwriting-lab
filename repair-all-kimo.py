@@ -185,7 +185,7 @@ manifest.write_text(m)
  p=p.replace(marker,add+marker,1)
 if "onBackPressed()" not in p:
  p=p.replace("        main.write_text(code)\n","""        if 'onBackPressed()' not in code:
-            code=code.replace('    }\\n}', '    }\\n    @Override\n    public void onBackPressed() {\n        if (getBridge() != null && getBridge().getWebView() != null) {\n            getBridge().getWebView().evaluateJavascript("window.__kimoHandleAndroidBack && window.__kimoHandleAndroidBack()", null);\n        } else { super.onBackPressed(); }\n    }\n}')
+            code=code.replace('    }\\n}', '    }\\n    @Override\\n    public void onBackPressed() {\\n        if (getBridge() != null && getBridge().getWebView() != null) {\\n            getBridge().getWebView().evaluateJavascript("window.__kimoHandleAndroidBack && window.__kimoHandleAndroidBack()", null);\\n        } else { super.onBackPressed(); }\\n    }\\n}')
         main.write_text(code)
 """,1)
 patcher.write_text(p)
